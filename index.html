@@ -316,9 +316,9 @@
     function getDifficultyMultiplier(diff) {
       const tier = diff[0];
       const num = parseInt(diff.slice(1));
-      if (tier === "P") return 1 - (num - 1) * (0.6 / 19);
-      if (tier === "G") return 0.35 - (num - 1) * (0.25 / 19);
-      if (tier === "U") return 0.09 - (num - 1) * (0.089 / 19);
+      if (tier === "P") return 0.966**num;
+      if (tier === "G") return 0.5 * 0.966**num;
+      if (tier === "U") return 0.25 * 0.9228**num;
       return 1;
     }
 
@@ -442,4 +442,5 @@
   </script>
 </body>
 </html>
+
 
