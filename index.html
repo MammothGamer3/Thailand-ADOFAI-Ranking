@@ -291,18 +291,27 @@
 
     backBtn.onclick = showLeaderboard;
     async function fetchClearsForPlayer(player) {
+      const filePromises = [];
+        for (let i = 1; i <= 200; i++) {
+          filePromises.push(
+            fetch(`./Player_Data/${i}.json`)
+              .then(res => (res.ok ? res.json() : null))
+              .catch(() => null)
+            );
+          }
+
+      const allData = (await Promise.all(filePromises)).filter(Boolean);
       const clears = [];
-      for (let i = 1; i <= 200; i++) {
-        try {
-          const res = await fetch(`./Player_Data/${i}.json`);
-          if (!res.ok) continue;
-          const data = await res.json();
-          const entries = Array.isArray(data) ? data : [data];
-          entries.forEach(e => {
-            if (Number(e.UserId_Cleared) === Number(player.userId)) clears.push(e);
-          });
-        } catch {}
-      }
+
+      allData.forEach(data => {
+        const entries = Array.isArray(data) ? data : [data];
+        entries.forEach(e => {
+          if (Number(e.UserId_Cleared) === Number(player.userId)) {
+            clears.push(e);
+          }
+        });
+      });
+
       return clears;
     }
 
@@ -442,6 +451,7 @@
   </script>
 </body>
 </html>
+
 
 
 
