@@ -327,9 +327,9 @@
       const tier = diff[0];
       const num = parseInt(diff.slice(1));
 
-      if (tier === "P") return 0.89442719**(num/10);
-      if (tier === "G") return 0.8 * 0.790569412**(num/10);
-      if (tier === "U") return 0.5 * 0.4472136**(num/10);
+      if (tier === "P") return 0.988324299**(num-1);
+      if (tier === "G") return 0.8 * 0.97556642**(num-1);
+      if (tier === "U") return 0.5 * 0.918781211**(num-1);
       return 1;
     }
 
@@ -453,6 +453,7 @@
   </script>
 </body>
 </html>
+
 
 
 
