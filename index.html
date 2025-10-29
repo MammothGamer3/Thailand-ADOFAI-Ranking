@@ -319,16 +319,14 @@
     function getDifficultyValue(diff) {
       const tier = diff[0];
       const num = parseInt(diff.slice(1));
-      const base = { P: 20, G: 20, U: 20 }[tier] || 0;
+      const base = { PGU: 60 }[tier] || 0;
       return base + num;
     }
 
     function getDifficultyMultiplier(diff) {
       const tier = diff[0];
       const num = parseInt(diff.slice(1));
-      if (tier === "P") return 0.966**num;
-      if (tier === "G") return 0.5 * 0.966**num;
-      if (tier === "U") return 0.25 * 0.9228**num;
+      if (tier === "PGU") return 0.938041867^(num^2);
       return 1;
     }
 
@@ -452,6 +450,7 @@
   </script>
 </body>
 </html>
+
 
 
 
