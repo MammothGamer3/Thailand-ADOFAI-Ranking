@@ -293,12 +293,13 @@
     async function fetchClearsForPlayer(player) {
       const filePromises = [];
         for (let i = 1; i <= 200; i++) {
+          const cacheBuster = Date.now(); // prevent cache
           filePromises.push(
-            fetch(`./Player_Data/${i}.json`)
+            fetch(`./Player_Data/${i}.json?ver=2&nocache=${cacheBuster}`)
               .then(res => (res.ok ? res.json() : null))
               .catch(() => null)
-            );
-          }
+          );
+        }
 
       const allData = (await Promise.all(filePromises)).filter(Boolean);
       const clears = [];
@@ -451,6 +452,7 @@
   </script>
 </body>
 </html>
+
 
 
 
