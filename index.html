@@ -326,12 +326,16 @@
     function getDifficultyMultiplier(diff) {
       const tier = diff[0];
       const num = parseInt(diff.slice(1), 10);
-      // Use (num - 1) because your Desmos formulas use x - 1
-      if (tier === "P") return 0.988324299 ** (num - 1);
-      if (tier === "G") return 0.8 * (0.97556642 ** (num - 1));
-      if (tier === "U") return 0.5 * (0.918781211 ** (num - 1));
-      return 1;
+
+      let result = 1;
+      if (tier === "P") result = 0.988324299 ** (num - 1);
+      else if (tier === "G") result = 0.8 * (0.97556642 ** (num - 1));
+      else if (tier === "U") result = 0.5 * (0.918781211 ** (num - 1));
+
+      console.log(diff, "→", result);  // ← add this
+      return result;
     }
+
 
     async function updatePlayerStats() {
       for (const player of players) {
@@ -453,6 +457,7 @@
   </script>
 </body>
 </html>
+
 
 
 
