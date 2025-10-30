@@ -2,9 +2,9 @@
   {
     "UserId_Cleared": 2,
     "level_name": "Hello (BPM) 2021",
-    "difficulty": "G7",
+    "difficulty": "U4",
     "baseScore": 160,
-    "timing": "Normal",
+    "timing": "Strict",
     "video": "https://www.youtube.com/embed/MNNTzLRgf4A",
     "judgement": {
       "tooEarly": 4,
@@ -16,4 +16,5 @@
     }
   }
 ]
+
 
