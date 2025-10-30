@@ -319,7 +319,7 @@
     function getDifficultyValue(diff) {
       const tier = diff[0];
       const num = parseInt(diff.slice(1));
-      const base = { P: 20, G: 20, U: 20 }[tier] || 0;
+      const base = { P: 0, G: 20, U: 40 }[tier] || 0;
       return base + num;
     }
 
@@ -456,6 +456,7 @@
   </script>
 </body>
 </html>
+
 
 
 
