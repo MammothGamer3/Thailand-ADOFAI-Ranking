@@ -228,7 +228,7 @@
       player._clears.forEach(c => {
         const acc = calcAccuracy(c.judgement);
         const scoreMtp = getScoreV2Mtp(c.judgement) * getXaccMtp(c.judgement, c.baseScore);
-        const timingMtp = c.timing === "Strict" ? 1 : 0.2;
+        const timingMtp = c.timing === "Strict" ? 1 : 1;
         const diffMtp = c.timing === "Strict" ? 1 : getDifficultyMultiplier(c.difficulty);
         const totalClearScore = c.baseScore * scoreMtp * timingMtp * diffMtp;
 
@@ -456,6 +456,7 @@
   </script>
 </body>
 </html>
+
 
 
 
