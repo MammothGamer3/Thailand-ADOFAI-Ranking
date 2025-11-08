@@ -1,0 +1,21 @@
+[
+  {
+    "UserId_Cleared": 2,
+    "level_name": "Speedcore Sonata",
+    "difficulty": "G11",
+    "baseScore": 210,
+    "timing": "Strict",
+    "video": "https://www.youtube.com/watch?v=Gx5zX3NFBOw",
+    "judgement": {
+      "tooEarly": 1,
+      "early": 28,
+      "ePerfect": 62,
+      "perfect": 3273,
+      "lPerfect": 13,
+      "late": 7
+    }
+  }
+]
+
+
+

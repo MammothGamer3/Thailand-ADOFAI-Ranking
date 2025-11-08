@@ -1,0 +1,21 @@
+[
+  {
+    "UserId_Cleared": 2,
+    "level_name": "am",
+    "difficulty": "G8",
+    "baseScore": 170,
+    "timing": "Strict",
+    "video": "https://www.youtube.com/watch?v=FaGxqW_413c",
+    "judgement": {
+      "tooEarly": 0,
+      "early": 5,
+      "ePerfect": 15,
+      "perfect": 1757,
+      "lPerfect": 20,
+      "late": 7
+    }
+  }
+]
+
+
+

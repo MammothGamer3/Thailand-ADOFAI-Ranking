@@ -1,0 +1,21 @@
+[
+  {
+    "UserId_Cleared": 1,
+    "level_name": "Finale Destination (nerfed)",
+    "difficulty": "G10",
+    "baseScore": 190,
+    "timing": "Strict",
+    "video": "https://www.youtube.com/watch?v=UWNM2Ep6IDk",
+    "judgement": {
+      "tooEarly": 2,
+      "early": 7,
+      "ePerfect": 17,
+      "perfect": 2195,
+      "lPerfect": 11,
+      "late": 2
+    }
+  }
+]
+
+
+

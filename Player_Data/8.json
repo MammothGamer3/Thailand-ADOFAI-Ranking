@@ -1,0 +1,21 @@
+[
+  {
+    "UserId_Cleared": 2,
+    "level_name": "startail",
+    "difficulty": "G5",
+    "baseScore": 140,
+    "timing": "Strict",
+    "video": "https://www.youtube.com/watch?v=ceW0S3IHFT8",
+    "judgement": {
+      "tooEarly": 1,
+      "early": 12,
+      "ePerfect": 9,
+      "perfect": 2374,
+      "lPerfect": 1,
+      "late": 1
+    }
+  }
+]
+
+
+

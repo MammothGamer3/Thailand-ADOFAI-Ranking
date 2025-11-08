@@ -1,0 +1,21 @@
+[
+  {
+    "UserId_Cleared": 2,
+    "level_name": "The Witch Hunt",
+    "difficulty": "G2",
+    "baseScore": 110,
+    "timing": "Strict",
+    "video": "https://www.youtube.com/watch?v=UOLh3xovYRM",
+    "judgement": {
+      "tooEarly": 0,
+      "early": 0,
+      "ePerfect": 3,
+      "perfect": 2060,
+      "lPerfect": 16,
+      "late": 3
+    }
+  }
+]
+
+
+

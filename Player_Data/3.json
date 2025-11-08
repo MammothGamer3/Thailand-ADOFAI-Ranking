@@ -1,0 +1,21 @@
+[
+  {
+    "UserId_Cleared": 1,
+    "level_name": "startail [Full.ver]",
+    "difficulty": "G7",
+    "baseScore": 160,
+    "timing": "Strict",
+    "video": "https://www.youtube.com/watch?v=fk6UeOpmPSU",
+    "judgement": {
+      "tooEarly": 2,
+      "early": 6,
+      "ePerfect": 17,
+      "perfect": 3934,
+      "lPerfect": 8,
+      "late": 2
+    }
+  }
+]
+
+
+
