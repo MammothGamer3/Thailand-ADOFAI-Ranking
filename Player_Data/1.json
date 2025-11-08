@@ -1,21 +1,22 @@
 [
   {
-    "UserId_Cleared": 2,
-    "level_name": "Hello (BPM) 2021",
-    "difficulty": "U4",
-    "baseScore": 850,
-    "timing": "Normal",
-    "video": "https://www.youtube.com/embed/MNNTzLRgf4A",
+    "UserId_Cleared": 1,
+    "level_name": "Alteregoism",
+    "difficulty": "G8",
+    "baseScore": 170,
+    "timing": "Strict",
+    "video": "https://www.youtube.com/watch?v=ODS-VnvPU4o",
     "judgement": {
-      "tooEarly": 4,
-      "early": 296,
-      "ePerfect": 146,
-      "perfect": 2990,
-      "lPerfect": 81,
-      "late": 83
+      "tooEarly": 2,
+      "early": 0,
+      "ePerfect": 6,
+      "perfect": 2199,
+      "lPerfect": 4,
+      "late": 1
     }
   }
 ]
+
 
 
 
