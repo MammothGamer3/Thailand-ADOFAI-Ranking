@@ -1,0 +1,21 @@
+[
+  {
+    "UserId_Cleared": 1,
+    "level_name": "国士無双",
+    "difficulty": "G4",
+    "baseScore": 130,
+    "timing": "Strict",
+    "video": "https://www.youtube.com/watch?v=CSzLeHsVZ38",
+    "judgement": {
+      "tooEarly": 1,
+      "early": 6,
+      "ePerfect": 9,
+      "perfect": 2580,
+      "lPerfect": 12,
+      "late": 5
+    }
+  }
+]
+
+
+
