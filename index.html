@@ -292,7 +292,7 @@
 
   <div class="top-box">
     <div id="tabLeaderboard" class="tab active">Leaderboard</div>
-    <div id="tabLevels" class="tab">Levels (New)</div>
+    <div id="tabLevels" class="tab">Levels</div>
   </div>
 
   <div class="ranking-container" id="ranking"></div>
@@ -334,6 +334,7 @@
     const modalClose = document.getElementById('modalClose');
 
     let levels = null; // will store loaded level objects
+    let playerDataAll = null; // optional cache of all player_data clears
 
     function showLeaderboard() {
       rankingDiv.style.display = 'flex';
@@ -393,11 +394,11 @@
       clearsContainer.style.gap = "10px";
 
       player._clears.forEach((c, idx) => {
-        const acc = calcAccuracy(c.judgement);
-        const scoreMtp = getScoreV2Mtp(c.judgement) * getXaccMtp(c.judgement, c.baseScore);
+        const acc = calcAccuracy(c.judgement || { tooEarly:0, early:0, ePerfect:0, perfect:0, lPerfect:0, late:0 });
+        const scoreMtp = getScoreV2Mtp(c.judgement || {}) * getXaccMtp(c.judgement || {}, c.baseScore || 0);
         const timingMtp = c.timing === "Strict" ? 1 : 1;
-        const diffMtp = c.timing === "Strict" ? 1 : getDifficultyMultiplier(c.difficulty);
-        const totalClearScore = c.baseScore * scoreMtp * timingMtp * diffMtp;
+        const diffMtp = c.timing === "Strict" ? 1 : getDifficultyMultiplier(c.difficulty || 'P0');
+        const totalClearScore = (c.baseScore || 0) * scoreMtp * timingMtp * diffMtp;
 
         const card = document.createElement('div');
         card.className = 'clear-card';
@@ -407,12 +408,12 @@
         left.style.flex = "1";
 
         // level name clickable to open level detail (if available)
-        const levelNameHtml = `<span class="level-name"><a class="level-link" data-level-name="${escapeHtml(c.level_name || '')}">${escapeHtml(c.level_name || 'Unknown Level')}</a></span>`;
+        const levelNameHtml = `<span class="level-name"><a class="level-link" data-level-name="${escapeHtml(c.level_name || c.LevelName || '')}">${escapeHtml(c.level_name || c.LevelName || 'Unknown Level')}</a></span>`;
 
         left.innerHTML = `
             <div><strong>Level:</strong> ${levelNameHtml}</div>
             <div style="margin-top:6px;"><strong>Difficulty:</strong>
-                <img src="Image_Source/${c.difficulty}.png" style="width:24px;height:24px;object-fit:contain;vertical-align:middle;">
+                <img src="Image_Source/${escapeHtml(c.difficulty || '')}.png" style="width:24px;height:24px;object-fit:contain;vertical-align:middle;" onerror="this.style.display='none'">
             </div>
             <div><strong>Timing:</strong> ${escapeHtml(c.timing || 'N/A')}</div>
             <div><strong>Accuracy:</strong> ${(acc * 100).toFixed(2)}%</div>
@@ -466,35 +467,130 @@
 
     backBtn.onclick = showLeaderboard;
 
-    // Fetch clears for a player by scanning Player_Data/*.json
-    async function fetchClearsForPlayer(player) {
-      const filePromises = [];
-      for (let i = 1; i <= 200; i++) {
-        const cacheBuster = Date.now(); // prevent cache
-        filePromises.push(
-          fetch(`./Player_Data/${i}.json?ver=2&nocache=${cacheBuster}`)
-            .then(res => (res.ok ? res.json() : null))
-            .catch(() => null)
-        );
+    // --- Generic folder JSON loader that tries multiple strategies ---
+    // folder should end with a trailing slash, e.g. "./Levels/"
+    async function fetchAllJsonFromFolder(folder) {
+      // Normalize folder path
+      if (!folder.endsWith('/')) folder = folder + '/';
+
+      // 1) Try to fetch folder URL and parse HTML listing (if the server exposes directory listing)
+      try {
+        const res = await fetch(folder, { cache: "no-store" });
+        if (res.ok) {
+          const ct = res.headers.get('content-type') || '';
+          if (ct.includes('text/html')) {
+            const text = await res.text();
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(text, 'text/html');
+            const anchors = Array.from(doc.querySelectorAll('a[href$=".json"]'));
+            const hrefs = anchors.map(a => (new URL(a.getAttribute('href'), location.href)).href)
+                               .filter(h => h.startsWith(location.origin + location.pathname.replace(/[^\/]*$/, '')));
+            // If anchors found, fetch them
+            if (hrefs.length > 0) {
+              const jsons = await Promise.all(hrefs.map(h =>
+                fetch(h, { cache: "no-store" }).then(r => r.ok ? r.json() : null).catch(() => null)
+              ));
+              return jsons.filter(Boolean);
+            }
+          } else {
+            // Some servers respond with JSON index when listing folder
+            const data = await res.json().catch(() => null);
+            if (data) {
+              // if it's an array of file paths or objects, try to fetch paths if strings
+              if (Array.isArray(data) && data.length && typeof data[0] === 'string') {
+                const jsons = await Promise.all(data.map(p =>
+                  fetch(new URL(p, folder).href, { cache: "no-store" }).then(r => r.ok ? r.json() : null).catch(()=>null)
+                ));
+                return jsons.filter(Boolean);
+              }
+            }
+          }
+        }
+      } catch (e) {
+        // ignore and try other strategies
       }
 
-      const allData = (await Promise.all(filePromises)).filter(Boolean);
-      const clears = [];
+      // 2) Try folder/index.json
+      try {
+        const idxRes = await fetch(folder + 'index.json', { cache: "no-store" });
+        if (idxRes.ok) {
+          const j = await idxRes.json();
+          // if this is an array of level objects -> return directly
+          if (Array.isArray(j)) return j;
+          // if it's an object mapping filenames -> content, collect values
+          if (typeof j === 'object') {
+            // some index.json might list filenames; if keys look like file names, fetch them
+            const possiblePaths = [];
+            for (const v of Object.values(j)) {
+              if (typeof v === 'string' && v.endsWith('.json')) possiblePaths.push(new URL(v, folder).href);
+              else if (typeof v === 'object') possiblePaths.push(v);
+            }
+            if (possiblePaths.length > 0 && typeof possiblePaths[0] === 'string') {
+              const jsons = await Promise.all(possiblePaths.map(p => fetch(p, { cache: "no-store" }).then(r => r.ok ? r.json() : null).catch(()=>null)));
+              return jsons.filter(Boolean);
+            } else {
+              // return the object as single-level array
+              return [j];
+            }
+          }
+        }
+      } catch (e) { /* continue */ }
 
-      allData.forEach(data => {
+      // 3) Fallback: try to fetch any .json files with a numeric pattern up to a reasonable limit
+      const maxTry = 500;
+      const fetches = [];
+      for (let i = 1; i <= maxTry; i++) {
+        const p = folder + i + '.json';
+        fetches.push(fetch(p, { cache: "no-store" }).then(r => r.ok ? r.json() : null).catch(()=>null));
+      }
+      const results = (await Promise.all(fetches)).filter(Boolean);
+      if (results.length > 0) return results;
+
+      // 4) Final fallback: attempt to fetch all files returned by a server-provided JSON manifest at folder + 'manifest.json'
+      try {
+        const mres = await fetch(folder + 'manifest.json', { cache: "no-store" });
+        if (mres.ok) {
+          const list = await mres.json();
+          if (Array.isArray(list)) {
+            const jsons = await Promise.all(list.map(p => fetch(new URL(p, folder).href, { cache: "no-store" }).then(r => r.ok ? r.json() : null).catch(()=>null)));
+            return jsons.filter(Boolean);
+          }
+        }
+      } catch (e) { /* ignore */ }
+
+      // nothing found
+      return [];
+    }
+
+    // Fetch clears for a player by scanning Player_Data folder regardless of filename
+    async function fetchClearsForPlayer(player) {
+      // load all player_data if not cached
+      if (!playerDataAll) {
+        playerDataAll = await fetchAllJsonFromFolder('./Player_Data/');
+      }
+      const clears = [];
+      playerDataAll.forEach(data => {
         const entries = Array.isArray(data) ? data : [data];
         entries.forEach(e => {
-          // some files may have different prop names; try to be flexible
-          const idKeys = ['UserId_Cleared','userId','UserId','User_Id'];
+          // flexible id detection
+          const idKeys = ['UserId_Cleared','userId','UserId','User_Id','UserIdCleared'];
           const userIdVal = idKeys.map(k => e[k]).find(v => v !== undefined);
           if (Number(userIdVal) === Number(player.userId)) {
             clears.push(e);
           }
+          // fallback: sometimes field might be inside nested object
+          if (!userIdVal) {
+            // try some nested possibilities
+            if (e.clears) {
+              const arr = Array.isArray(e.clears) ? e.clears : [];
+              arr.forEach(c => {
+                const id = c.UserId_Cleared || c.userId || c.UserId;
+                if (Number(id) === Number(player.userId)) clears.push(c);
+              });
+            }
+          }
         });
       });
-
-      // normalize common field names if necessary
-      // but we rely on the objects as-is for showing full clear
       return clears;
     }
 
@@ -638,31 +734,28 @@
         return -0.0076 / (xacc - 1.0023) + 1.17;
     }
 
-    // --- Levels loading & UI ---
+    // --- Levels loading & UI (reads any .json in folder if possible) ---
     async function loadLevels() {
       levelsPanel.innerHTML = '<p>Loading levels...</p>';
-      const filePromises = [];
-      for (let i = 1; i <= 200; i++) {
-        const cacheBuster = Date.now();
-        filePromises.push(
-          fetch(`./Levels/${i}.json?nocache=${cacheBuster}`)
-            .then(res => (res.ok ? res.json() : null))
-            .catch(() => null)
-        );
+      const dataList = await fetchAllJsonFromFolder('./Levels/');
+      if (!dataList || dataList.length === 0) {
+        levelsPanel.innerHTML = '<p>No levels found in the Levels folder.</p>';
+        levels = [];
+        return;
       }
-      const all = (await Promise.all(filePromises)).filter(Boolean);
-      // flatten arrays if any file exports an array
+
+      // flatten arrays and normalize
       levels = [];
-      all.forEach(x => {
+      dataList.forEach(x => {
         if (Array.isArray(x)) levels.push(...x);
-        else levels.push(x);
+        else if (typeof x === 'object') levels.push(x);
       });
 
-      // basic normalization: ensure name, difficulty, tags exist
+      // normalize names/tags/difficulty
       levels = levels.map((lv, idx) => ({
         __sourceIndex: idx + 1,
         name: lv.name || lv.LevelName || lv.level_name || `Level ${idx+1}`,
-        difficulty: lv.difficulty || lv.Difficulty || 'P0',
+        difficulty: lv.difficulty || lv.Difficulty || lv.diff || 'P0',
         tags: lv.tags || lv.Tags || lv.tagList || [],
         raw: lv
       }));
@@ -680,7 +773,7 @@
         const card = document.createElement('div');
         card.className = 'level-card';
         card.innerHTML = `
-          <img src="Image_Source/${lv.difficulty}.png" alt="${lv.difficulty}" onerror="this.style.display='none'">
+          <img src="Image_Source/${escapeHtml(lv.difficulty)}.png" alt="${escapeHtml(lv.difficulty)}" onerror="this.style.display='none'">
           <div class="level-meta">
             <div class="name">${escapeHtml(lv.name)}</div>
             <div class="tags">${Array.isArray(lv.tags) ? lv.tags.join(', ') : escapeHtml(String(lv.tags || ''))}</div>
@@ -697,7 +790,7 @@
       modalContent.innerHTML = `
         <h3>Level: ${escapeHtml(levelObj.name || lv.name || 'Unknown')}</h3>
         <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
-          <img src="Image_Source/${levelObj.difficulty}.png" alt="${levelObj.difficulty}" style="width:48px;height:48px;object-fit:contain;" onerror="this.style.display='none'">
+          <img src="Image_Source/${escapeHtml(levelObj.difficulty)}.png" alt="${escapeHtml(levelObj.difficulty)}" style="width:48px;height:48px;object-fit:contain;" onerror="this.style.display='none'">
           <div>
             <div><strong>Difficulty:</strong> ${escapeHtml(levelObj.difficulty || '')}</div>
             <div><strong>Tags:</strong> ${Array.isArray(levelObj.tags) ? levelObj.tags.join(', ') : escapeHtml(String(levelObj.tags || ''))}</div>
@@ -819,8 +912,6 @@
     // initial load
     updatePlayerStats();
     loadPlayers();
-
-    // expose loadPlayers so updatePlayerStats can call later (already used)
   </script>
 </body>
 </html>
