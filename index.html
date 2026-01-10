@@ -16,8 +16,28 @@
 
     h1 {
       font-size: 2.5rem;
-      margin-bottom: 30px;
+      margin-bottom: 10px;
     }
+
+    /* Top selection box with tabs */
+    .top-box {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .tab {
+      background: rgba(255,255,255,0.06);
+      padding: 10px 18px;
+      border-radius: 12px;
+      cursor: pointer;
+      user-select: none;
+      transition: background-color 0.2s, transform 0.12s;
+      font-weight: 600;
+    }
+    .tab:hover { transform: translateY(-2px); background: rgba(255,255,255,0.12); }
+    .tab.active { background: rgba(255,255,255,0.14); box-shadow: 0 6px 18px rgba(0,0,0,0.3); }
 
     .ranking-container {
       display: flex;
@@ -26,7 +46,7 @@
       background-color: rgba(255, 255, 255, 0.1);
       border-radius: 20px;
       padding: 30px;
-      max-width: 700px;
+      max-width: 900px;
       width: 100%;
       margin: 0 auto;
       gap: 15px;
@@ -85,9 +105,9 @@
 
     .profile-container {
       display: none;
-      background-color: rgba(255, 255, 255, 0.1);
+      background-color: rgba(255, 255, 255, 0.08);
       border-radius: 20px;
-      max-width: 500px;
+      max-width: 700px;
       margin: 0 auto;
       padding: 30px;
       box-shadow: 0 4px 8px rgba(0,0,0,0.3);
@@ -127,12 +147,16 @@
     }
 
     .clear-card {
-      background: rgba(255,255,255,0.1);
+      background: rgba(255,255,255,0.06);
       border-radius: 10px;
       padding: 10px;
       margin: 10px 0;
       text-align: left;
       position: relative;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
     }
 
     .icon-line {
@@ -168,16 +192,124 @@
       transform: scale(1.1);
     }
 
+    /* Levels container (panel) */
+    .levels-panel {
+      display: none;
+      max-width: 900px;
+      width: 100%;
+      margin: 10px auto 0;
+      padding: 20px;
+      background: rgba(255,255,255,0.06);
+      border-radius: 14px;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.35);
+      text-align: left;
+    }
+
+    .level-card {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px;
+      border-radius: 10px;
+      background: rgba(255,255,255,0.03);
+      margin-bottom: 10px;
+      cursor: pointer;
+      transition: background 0.12s, transform 0.12s;
+    }
+    .level-card:hover { background: rgba(255,255,255,0.08); transform: translateY(-2px); }
+
+    .level-card img {
+      width: 36px;
+      height: 36px;
+      object-fit: contain;
+    }
+
+    .level-meta {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .level-meta .name { font-weight: 700; color: #fff; }
+    .level-meta .tags { font-size: 0.85rem; color: #ddd; }
+
+    /* Modal / overlay for level detail & clear detail */
+    .modal {
+      display: none;
+      position: fixed;
+      left: 0; top: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.6);
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      padding: 20px;
+    }
+    .modal .inner {
+      max-width: 820px;
+      width: 100%;
+      background: rgba(255,255,255,0.95);
+      color: #111;
+      border-radius: 12px;
+      padding: 18px;
+      text-align: left;
+      max-height: 90vh;
+      overflow: auto;
+    }
+    .modal .inner h3 { margin-top: 0; color: #002; }
+    .modal .close {
+      background: #c33;
+      color: white;
+      border: none;
+      padding: 6px 10px;
+      border-radius: 8px;
+      cursor: pointer;
+      float: right;
+    }
+
+    pre.json {
+      background: #f6f8fa;
+      padding: 12px;
+      border-radius: 8px;
+      overflow: auto;
+      color: #111;
+    }
+
+    a.level-link {
+      color: inherit;
+      text-decoration: underline;
+      cursor: pointer;
+      font-weight: 700;
+    }
+
+    @media (max-width: 640px) {
+      .player-card { padding: 12px; flex-direction: column; gap: 8px; align-items: flex-start; }
+      .player-rank { align-self: flex-end; }
+    }
   </style>
 </head>
 <body>
   <h1 id="title">Thailand ADOFAI Ranking</h1>
 
+  <div class="top-box">
+    <div id="tabLeaderboard" class="tab active">Leaderboard</div>
+    <div id="tabLevels" class="tab">Levels (New)</div>
+  </div>
+
   <div class="ranking-container" id="ranking"></div>
+
+  <div class="levels-panel" id="levelsPanel"></div>
 
   <div class="profile-container" id="profile"></div>
 
   <button id="backBtn" style="display:none;">⬅ Back to Leaderboard</button>
+
+  <!-- Level detail modal -->
+  <div class="modal" id="modal">
+    <div class="inner" id="modalInner">
+      <button class="close" id="modalClose">Close</button>
+      <div id="modalContent"></div>
+    </div>
+  </div>
 
   <script>
     const players = [
@@ -185,24 +317,53 @@
       { name: "Mammoth_ADOFAI", userId: 2, score: 0.00, general: 0.00, image: "https://api.tuforums.com/cdn/images/PROFILE/8dbec20d-c704-4df5-9d3a-71dc310ae8fc/original", accuracy: 0, clears: 0, top_difficulty: "N/A" },
       { name: "Paper222", userId: 3, score: 0.00, general: 0.00, image: "https://api.tuforums.com/cdn/images/PROFILE/c5e3cedc-5c70-4b7d-884e-1c892ce7946d/original", accuracy: 0, clears: 0, top_difficulty: "N/A" },
       { name: "VFXER", userId: 4, score: 0.00, general: 0.00, image: "https://cdn.discordapp.com/avatars/573445035107024906/07f2eaf2553d593b37664ced1b9927a2.png", accuracy: 0, clears: 0, top_difficulty: "N/A" },
-      { name: "t3ww", userId: 5, score: 0.00, general: 0.00, image: "https://yt3.googleusercontent.com/tVbp35AHt9ZWgGGRIXXJ5u1mHPB0T1XtYmf7m-BnHuDYm7c6ai-HoHx_ULYOnR9kZpFZX4Kqmw=s160-c-k-c0x00ffffff-no-rj", accuracy: 0, clears: 0, top_difficulty: "N/A" }
+      { name: "t3ww", userId: 5, score: 0.00, general: 0.00, image: "https://yt3.googleusercontent.com/tVbp35AHt9ZWgGGRIXXJ5u1mHPB0T1XtYmf7m-BnHuDYm7c6ai-HoHx_ULYOnR9kZpFZX4Kqmw=s160-c-k-c0x00ffffff-n", accuracy: 0, clears: 0, top_difficulty: "N/A" }
     ];
 
     const rankingDiv = document.getElementById('ranking');
     const profileDiv = document.getElementById('profile');
     const title = document.getElementById('title');
     const backBtn = document.getElementById('backBtn');
+    const levelsPanel = document.getElementById('levelsPanel');
+
+    const tabLeaderboard = document.getElementById('tabLeaderboard');
+    const tabLevels = document.getElementById('tabLevels');
+
+    const modal = document.getElementById('modal');
+    const modalContent = document.getElementById('modalContent');
+    const modalClose = document.getElementById('modalClose');
+
+    let levels = null; // will store loaded level objects
 
     function showLeaderboard() {
       rankingDiv.style.display = 'flex';
       profileDiv.style.display = 'none';
+      levelsPanel.style.display = 'none';
       backBtn.style.display = 'none';
       title.textContent = "Thailand ADOFAI Ranking";
+      tabLeaderboard.classList.add('active');
+      tabLevels.classList.remove('active');
+    }
+
+    function showLevelsPanel() {
+      rankingDiv.style.display = 'none';
+      profileDiv.style.display = 'none';
+      levelsPanel.style.display = 'block';
+      backBtn.style.display = 'none';
+      title.textContent = "Levels";
+      tabLeaderboard.classList.remove('active');
+      tabLevels.classList.add('active');
+
+      // load levels if not loaded
+      if (!levels) {
+        loadLevels();
+      }
     }
 
     function showProfile(player, rank) {
       rankingDiv.style.display = 'none';
       profileDiv.style.display = 'block';
+      levelsPanel.style.display = 'none';
       backBtn.style.display = 'inline-block';
       title.textContent = `${player.name}'s Profile`;
 
@@ -217,15 +378,21 @@
         <p><strong>Top Difficulty:</strong> ${player.top_difficulty}</p>
       `;
 
-      if (!player._clears || player._clears.length === 0) return;
+      if (!player._clears || player._clears.length === 0) {
+        const empty = document.createElement('p');
+        empty.textContent = "No clears found for this player.";
+        profileDiv.appendChild(empty);
+        return;
+      }
 
+      // container for clear items
       const clearsContainer = document.createElement('div');
       clearsContainer.style.marginTop = "20px";
       clearsContainer.style.display = "flex";
       clearsContainer.style.flexDirection = "column";
       clearsContainer.style.gap = "10px";
 
-      player._clears.forEach(c => {
+      player._clears.forEach((c, idx) => {
         const acc = calcAccuracy(c.judgement);
         const scoreMtp = getScoreV2Mtp(c.judgement) * getXaccMtp(c.judgement, c.baseScore);
         const timingMtp = c.timing === "Strict" ? 1 : 1;
@@ -233,53 +400,53 @@
         const totalClearScore = c.baseScore * scoreMtp * timingMtp * diffMtp;
 
         const card = document.createElement('div');
-        card.style.background = "rgba(255,255,255,0.08)";
-        card.style.borderRadius = "14px";
-        card.style.padding = "15px";
-        card.style.display = "flex";
-        card.style.alignItems = "center";
-        card.style.justifyContent = "space-between";
+        card.className = 'clear-card';
 
         const left = document.createElement('div');
         left.style.textAlign = "left";
+        left.style.flex = "1";
+
+        // level name clickable to open level detail (if available)
+        const levelNameHtml = `<span class="level-name"><a class="level-link" data-level-name="${escapeHtml(c.level_name || '')}">${escapeHtml(c.level_name || 'Unknown Level')}</a></span>`;
 
         left.innerHTML = `
-            <p><strong>Level:</strong> ${c.level_name}</p>
-            <p><strong>Difficulty:</strong>
-                <img src="Image_Source/${c.difficulty}.png"
-                    style="width:24px;height:24px;object-fit:contain;vertical-align:middle;">
-            </p>
-            <p><strong>Timing:</strong>
-                <img src="Image_Source/${c.timing}.png"
-                    style="width:24px;height:24px;object-fit:contain;vertical-align:middle;">
-            </p>
-            <p><strong>Accuracy:</strong> ${(acc * 100).toFixed(2)}%</p>
-            <p><strong>Score:</strong> ${totalClearScore.toFixed(2)}</p>
-            <p><strong>Judgement:</strong>
-                <span style="color:red;">${c.judgement.tooEarly}</span> |
-                <span style="color:orange;">${c.judgement.early}</span> |
-                <span style="color:yellow;">${c.judgement.ePerfect}</span> |
-                <span style="color:lightgreen;">${c.judgement.perfect}</span> |
-                <span style="color:yellow;">${c.judgement.lPerfect}</span> |
-                <span style="color:orange;">${c.judgement.late}</span>
-            </p>
+            <div><strong>Level:</strong> ${levelNameHtml}</div>
+            <div style="margin-top:6px;"><strong>Difficulty:</strong>
+                <img src="Image_Source/${c.difficulty}.png" style="width:24px;height:24px;object-fit:contain;vertical-align:middle;">
+            </div>
+            <div><strong>Timing:</strong> ${escapeHtml(c.timing || 'N/A')}</div>
+            <div><strong>Accuracy:</strong> ${(acc * 100).toFixed(2)}%</div>
+            <div><strong>Score:</strong> ${totalClearScore.toFixed(2)}</div>
         `;
 
         const right = document.createElement('div');
-        right.className = "yt-logo";
+        right.style.display = 'flex';
+        right.style.flexDirection = 'column';
+        right.style.alignItems = 'flex-end';
+        right.style.gap = '6px';
 
+        // YouTube thumbnail/link (if exists)
         if (c.video) {
           const ytLink = document.createElement('a');
           ytLink.href = c.video;
           ytLink.target = "_blank";
-
-          const ytImg = document.createElement('img');
-          ytImg.src = "Image_Source/yt.png";
-          ytImg.alt = "YouTube link";
-
-          ytLink.appendChild(ytImg);
+          ytLink.style.display = 'inline-flex';
+          ytLink.style.alignItems = 'center';
+          ytLink.style.gap = '8px';
+          ytLink.style.color = '#fff';
+          ytLink.style.textDecoration = 'none';
+          ytLink.innerHTML = `<img src="Image_Source/yt.png" alt="YouTube" style="width:36px;height:36px;"> <span style="font-size:0.9rem">Watch</span>`;
           right.appendChild(ytLink);
         }
+
+        // View Full Clear button (opens modal with full JSON + embedded video if available)
+        const viewBtn = document.createElement('button');
+        viewBtn.textContent = "View Full Clear";
+        viewBtn.onclick = (ev) => {
+          ev.stopPropagation();
+          showClearDetailModal(c);
+        };
+        right.appendChild(viewBtn);
 
         card.appendChild(left);
         card.appendChild(right);
@@ -287,19 +454,29 @@
       });
 
       profileDiv.appendChild(clearsContainer);
+
+      // attach click handler for level name links inside profile (delegation)
+      profileDiv.querySelectorAll('.level-link').forEach(a => {
+        a.addEventListener('click', (ev) => {
+          const levelName = ev.currentTarget.dataset.levelName;
+          openLevelFromNameOrClear({ level_name: levelName });
+        });
+      });
     }
 
     backBtn.onclick = showLeaderboard;
+
+    // Fetch clears for a player by scanning Player_Data/*.json
     async function fetchClearsForPlayer(player) {
       const filePromises = [];
-        for (let i = 1; i <= 200; i++) {
-          const cacheBuster = Date.now(); // prevent cache
-          filePromises.push(
-            fetch(`./Player_Data/${i}.json?ver=2&nocache=${cacheBuster}`)
-              .then(res => (res.ok ? res.json() : null))
-              .catch(() => null)
-          );
-        }
+      for (let i = 1; i <= 200; i++) {
+        const cacheBuster = Date.now(); // prevent cache
+        filePromises.push(
+          fetch(`./Player_Data/${i}.json?ver=2&nocache=${cacheBuster}`)
+            .then(res => (res.ok ? res.json() : null))
+            .catch(() => null)
+        );
+      }
 
       const allData = (await Promise.all(filePromises)).filter(Boolean);
       const clears = [];
@@ -307,25 +484,30 @@
       allData.forEach(data => {
         const entries = Array.isArray(data) ? data : [data];
         entries.forEach(e => {
-          if (Number(e.UserId_Cleared) === Number(player.userId)) {
+          // some files may have different prop names; try to be flexible
+          const idKeys = ['UserId_Cleared','userId','UserId','User_Id'];
+          const userIdVal = idKeys.map(k => e[k]).find(v => v !== undefined);
+          if (Number(userIdVal) === Number(player.userId)) {
             clears.push(e);
           }
         });
       });
 
+      // normalize common field names if necessary
+      // but we rely on the objects as-is for showing full clear
       return clears;
     }
 
     function getDifficultyValue(diff) {
-      const tier = diff[0];
-      const num = parseInt(diff.slice(1));
+      const tier = diff && diff[0];
+      const num = parseInt(diff && diff.slice(1)) || 0;
       const base = { P: 20, G: 20, U: 20 }[tier] || 0;
       return base + num;
     }
 
     function getDifficultyMultiplier(diff) {
-      const tier = diff[0];
-      const num = parseInt(diff.slice(1), 10);
+      const tier = diff && diff[0];
+      const num = parseInt(diff && diff.slice(1), 10) || 1;
 
       let result = 1;
       if (tier === "P") result = 0.988324299 ** (num - 1);
@@ -334,7 +516,6 @@
       
       return result;
     }
-
 
     async function updatePlayerStats() {
       for (const player of players) {
@@ -347,14 +528,14 @@
         let topDiffValue = 0;
 
         clears.forEach(c => {
-          const acc = calcAccuracy(c.judgement);
-          const scoreMtp = getScoreV2Mtp(c.judgement) * getXaccMtp(c.judgement, c.baseScore);
+          const acc = calcAccuracy(c.judgement || { tooEarly:0, early:0, ePerfect:0, perfect:0, lPerfect:0, late:0 });
+          const scoreMtp = getScoreV2Mtp(c.judgement || {}) * getXaccMtp(c.judgement || {}, c.baseScore || 0);
           const timingMtp = c.timing === "Strict" ? 1 : 1;
-          const diffMtp = c.timing === "Strict" ? 1 : getDifficultyMultiplier(c.difficulty);
-          const totalScore = c.baseScore * scoreMtp * timingMtp * diffMtp;
+          const diffMtp = c.timing === "Strict" ? 1 : getDifficultyMultiplier(c.difficulty || 'P0');
+          const totalScore = (c.baseScore || 0) * scoreMtp * timingMtp * diffMtp;
           scores.push(totalScore);
           accs.push(acc);
-          topDiffValue = Math.max(topDiffValue, getDifficultyValue(c.difficulty));
+          topDiffValue = Math.max(topDiffValue, getDifficultyValue(c.difficulty || 'P0'));
         });
 
         const tier = topDiffValue > 40 ? "U" + (topDiffValue - 40)
@@ -364,7 +545,7 @@
         scores.sort((a, b) => b - a);
         const rankingScore = scores.slice(0, 10).reduce((a, b) => a + b, 0);
         const general = scores.reduce((a, b) => a + b, 0);
-        const avgAcc = (accs.reduce((a, b) => a + b, 0) / accs.length) * 100;
+        const avgAcc = (accs.reduce((a, b) => a + b, 0) / accs.length) * 100 || 0;
 
         player.score = rankingScore;
         player.general = general;
@@ -401,10 +582,12 @@
       });
     }
 
+    // --- accuracy and score helpers (unchanged) ---
     const gmConst = 315;
     const start = 1, end = 50, startDeduc = 10, endDeduc = 50, pwr = 0.7;
 
     function calcAccuracy(j) {
+      j = j || { tooEarly:0, early:0, ePerfect:0, perfect:0, lPerfect:0, late:0 };
       const total = j.tooEarly + j.early + j.ePerfect + j.perfect + j.lPerfect + j.late;
       if (total === 0) return 0;
       const weighted =
@@ -418,10 +601,12 @@
     }
 
     function tileCount(j) {
+      j = j || { tooEarly:0, early:0, ePerfect:0, perfect:0, lPerfect:0, late:0 };
       return j.tooEarly + j.early + j.ePerfect + j.perfect + j.lPerfect + j.late;
     }
 
     function getScoreV2Mtp(j) {
+      j = j || { tooEarly: 0 };
       const misses = j.tooEarly;
       const tiles = tileCount(j);
       if (!misses) return 1.1;
@@ -443,6 +628,7 @@
     }
 
     function getXaccMtp(j, baseScore) {
+      j = j || {};
       const xacc = calcAccuracy(j);
       const xacc_percentage = xacc * 100;
       if (xacc_percentage < 95) return 1;
@@ -452,30 +638,189 @@
         return -0.0076 / (xacc - 1.0023) + 1.17;
     }
 
+    // --- Levels loading & UI ---
+    async function loadLevels() {
+      levelsPanel.innerHTML = '<p>Loading levels...</p>';
+      const filePromises = [];
+      for (let i = 1; i <= 200; i++) {
+        const cacheBuster = Date.now();
+        filePromises.push(
+          fetch(`./Levels/${i}.json?nocache=${cacheBuster}`)
+            .then(res => (res.ok ? res.json() : null))
+            .catch(() => null)
+        );
+      }
+      const all = (await Promise.all(filePromises)).filter(Boolean);
+      // flatten arrays if any file exports an array
+      levels = [];
+      all.forEach(x => {
+        if (Array.isArray(x)) levels.push(...x);
+        else levels.push(x);
+      });
+
+      // basic normalization: ensure name, difficulty, tags exist
+      levels = levels.map((lv, idx) => ({
+        __sourceIndex: idx + 1,
+        name: lv.name || lv.LevelName || lv.level_name || `Level ${idx+1}`,
+        difficulty: lv.difficulty || lv.Difficulty || 'P0',
+        tags: lv.tags || lv.Tags || lv.tagList || [],
+        raw: lv
+      }));
+
+      renderLevelList();
+    }
+
+    function renderLevelList() {
+      if (!levels || levels.length === 0) {
+        levelsPanel.innerHTML = '<p>No levels found in the Levels folder.</p>';
+        return;
+      }
+      levelsPanel.innerHTML = '';
+      levels.forEach(lv => {
+        const card = document.createElement('div');
+        card.className = 'level-card';
+        card.innerHTML = `
+          <img src="Image_Source/${lv.difficulty}.png" alt="${lv.difficulty}" onerror="this.style.display='none'">
+          <div class="level-meta">
+            <div class="name">${escapeHtml(lv.name)}</div>
+            <div class="tags">${Array.isArray(lv.tags) ? lv.tags.join(', ') : escapeHtml(String(lv.tags || ''))}</div>
+          </div>
+        `;
+        card.onclick = () => showLevelDetailModal(lv);
+        levelsPanel.appendChild(card);
+      });
+    }
+
+    // show modal with level detail (name + difficulty image + tags + "view JSON")
+    function showLevelDetailModal(levelObj) {
+      const lv = levelObj.raw ? levelObj.raw : levelObj;
+      modalContent.innerHTML = `
+        <h3>Level: ${escapeHtml(levelObj.name || lv.name || 'Unknown')}</h3>
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+          <img src="Image_Source/${levelObj.difficulty}.png" alt="${levelObj.difficulty}" style="width:48px;height:48px;object-fit:contain;" onerror="this.style.display='none'">
+          <div>
+            <div><strong>Difficulty:</strong> ${escapeHtml(levelObj.difficulty || '')}</div>
+            <div><strong>Tags:</strong> ${Array.isArray(levelObj.tags) ? levelObj.tags.join(', ') : escapeHtml(String(levelObj.tags || ''))}</div>
+          </div>
+        </div>
+        <button id="viewLevelJsonBtn">View JSON</button>
+        <div id="levelJsonContainer" style="margin-top:12px;display:none;">
+          <pre class="json" id="levelJsonPre"></pre>
+        </div>
+      `;
+      modal.style.display = 'flex';
+
+      document.getElementById('viewLevelJsonBtn').onclick = () => {
+        document.getElementById('levelJsonContainer').style.display = 'block';
+        document.getElementById('levelJsonPre').textContent = JSON.stringify(lv, null, 2);
+      };
+    }
+
+    // show modal with full clear details and embed video if available.
+    function showClearDetailModal(clearObj) {
+      modalContent.innerHTML = `<h3>Clear: ${escapeHtml(clearObj.level_name || clearObj.LevelName || 'Unknown')}</h3>
+        <div style="margin-bottom:8px;">
+          <strong>Difficulty:</strong> ${escapeHtml(clearObj.difficulty || '')}
+          &nbsp;&nbsp;<strong>Timing:</strong> ${escapeHtml(clearObj.timing || '')}
+        </div>
+        <div id="clearVideo" style="margin-bottom:12px;"></div>
+        <button id="viewClearJsonBtn">View Clear JSON</button>
+        <div id="clearJsonContainer" style="margin-top:12px;display:none;">
+          <pre class="json" id="clearJsonPre"></pre>
+        </div>
+        <div style="margin-top:12px;">
+          <button id="openLevelFromClearBtn">Open Level Info</button>
+        </div>
+      `;
+
+      // embed video if YouTube link exists
+      const vidDiv = document.getElementById('clearVideo');
+      if (clearObj.video) {
+        const embed = toYouTubeEmbed(clearObj.video);
+        if (embed) {
+          vidDiv.innerHTML = `<iframe width="100%" height="360" src="${embed}" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
+        } else {
+          vidDiv.innerHTML = `<a href="${clearObj.video}" target="_blank">Open video</a>`;
+        }
+      }
+
+      modal.style.display = 'flex';
+
+      document.getElementById('viewClearJsonBtn').onclick = () => {
+        document.getElementById('clearJsonContainer').style.display = 'block';
+        document.getElementById('clearJsonPre').textContent = JSON.stringify(clearObj, null, 2);
+      };
+
+      document.getElementById('openLevelFromClearBtn').onclick = () => {
+        openLevelFromNameOrClear(clearObj);
+      };
+    }
+
+    // Attempt to find a level by name or by properties on the clear object. Open modal with level detail if found,
+    // otherwise show level info constructed from clear (basic).
+    function openLevelFromNameOrClear(clearOrName) {
+      const name = typeof clearOrName === 'string' ? clearOrName : (clearOrName.level_name || clearOrName.LevelName || clearOrName.name);
+      if (!name) {
+        modalContent.innerHTML = `<h3>No level info available</h3>`;
+        modal.style.display = 'flex';
+        return;
+      }
+      // try to find in loaded levels
+      if (levels && levels.length) {
+        const found = levels.find(lv => (lv.name && lv.name.toLowerCase() === String(name).toLowerCase()));
+        if (found) {
+          showLevelDetailModal(found);
+          return;
+        }
+      }
+      // if not found, construct a small detail view from clearOrName
+      const fake = {
+        name,
+        difficulty: clearOrName.difficulty || 'Unknown',
+        tags: clearOrName.tags || []
+      };
+      showLevelDetailModal({ name: fake.name, difficulty: fake.difficulty, tags: fake.tags, raw: fake });
+    }
+
+    // helper to convert youtube watch url to embed or return null
+    function toYouTubeEmbed(url) {
+      try {
+        const u = new URL(url);
+        if (u.hostname.includes('youtube.com')) {
+          const v = u.searchParams.get('v');
+          if (v) return `https://www.youtube.com/embed/${v}`;
+        } else if (u.hostname.includes('youtu.be')) {
+          const id = u.pathname.slice(1);
+          return `https://www.youtube.com/embed/${id}`;
+        }
+      } catch (e) { /* not a url */ }
+      return null;
+    }
+
+    // modal close
+    modalClose.onclick = () => { modal.style.display = 'none'; modalContent.innerHTML = ''; };
+    modal.onclick = (ev) => { if (ev.target === modal) { modal.style.display = 'none'; modalContent.innerHTML = ''; } };
+
+    // escape helper
+    function escapeHtml(s) {
+      if (s === null || s === undefined) return '';
+      return String(s)
+        .replaceAll('&','&amp;')
+        .replaceAll('<','&lt;')
+        .replaceAll('>','&gt;')
+        .replaceAll('"','&quot;')
+        .replaceAll("'",'&#039;');
+    }
+
+    // UI tab handlers
+    tabLeaderboard.onclick = () => showLeaderboard();
+    tabLevels.onclick = () => showLevelsPanel();
+
+    // initial load
     updatePlayerStats();
+    loadPlayers();
+
+    // expose loadPlayers so updatePlayerStats can call later (already used)
   </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
